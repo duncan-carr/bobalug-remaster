@@ -74,6 +74,11 @@ export default function Home() {
     async function fetchInstagramFeed() {
       try {
         const response = await fetch("https://feeds.behold.so/DAQuc4zCCTFnpMFc2c9k");
+        if (!response.ok) {
+          console.warn("Instagram feed unavailable:", response.status);
+          setInstagramPosts([]);
+          return;
+        }
         const data = await response.json();
         setInstagramPosts(data.posts?.slice(0, 4) ?? []);
       } catch (error) {

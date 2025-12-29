@@ -8,16 +8,8 @@ export const getHomeStats = query({
     const profiles = await ctx.db.query("profiles").collect();
     const memberCount = profiles.length;
 
-    // Count events
-    const events = await ctx.db
-      .query("events")
-      .withIndex("by_published", (q) => q.eq("isPublished", true))
-      .collect();
-    const eventCount = events.length;
-
     return {
       memberCount,
-      eventCount,
     };
   },
 });
