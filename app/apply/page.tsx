@@ -1111,112 +1111,106 @@ export default function ApplyPage() {
     }
   };
 
-  // Show existing application status (only if user cannot apply)
-  if (canApplyResult && !canApplyResult.canApply) {
+  // Application status component for authenticated users who cannot apply
+  const ApplicationStatusSection = () => {
     const mostRecentApp = applicationHistory?.[0];
     
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="flex-1">
-          <section className="mx-auto max-w-2xl px-6 py-20">
-            <div className="text-center">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-                {mostRecentApp?.status === "pending" || mostRecentApp?.status === "reviewing" ? (
-                  <Clock className="h-10 w-10 text-primary" />
-                ) : mostRecentApp?.status === "accepted" ? (
-                  <CheckCircle2 className="h-10 w-10 text-green-500" />
-                ) : mostRecentApp?.status === "rejected" ? (
-                  <X className="h-10 w-10 text-destructive" />
-                ) : (
-                  <Clock className="h-10 w-10 text-yellow-500" />
-                )}
-              </div>
-              <h1 className="text-3xl font-semibold tracking-tight">
-                {mostRecentApp?.status === "pending" || mostRecentApp?.status === "reviewing"
-                  ? "Application Under Review"
-                  : mostRecentApp?.status === "accepted"
-                    ? "Welcome to BobaLUG!"
-                    : mostRecentApp?.status === "rejected"
-                      ? "Application Not Accepted"
-                      : "Application Status"}
-              </h1>
-              <p className="mt-4 text-muted-foreground">
-                {canApplyResult.reason}
+      <section className="mx-auto max-w-2xl px-6 py-20">
+        <div className="text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+            {mostRecentApp?.status === "pending" || mostRecentApp?.status === "reviewing" ? (
+              <Clock className="h-10 w-10 text-primary" />
+            ) : mostRecentApp?.status === "accepted" ? (
+              <CheckCircle2 className="h-10 w-10 text-green-500" />
+            ) : mostRecentApp?.status === "rejected" ? (
+              <X className="h-10 w-10 text-destructive" />
+            ) : (
+              <Clock className="h-10 w-10 text-yellow-500" />
+            )}
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {mostRecentApp?.status === "pending" || mostRecentApp?.status === "reviewing"
+              ? "Application Under Review"
+              : mostRecentApp?.status === "accepted"
+                ? "Welcome to BobaLUG!"
+                : mostRecentApp?.status === "rejected"
+                  ? "Application Not Accepted"
+                  : "Application Status"}
+          </h1>
+          <p className="mt-4 text-muted-foreground">
+            {canApplyResult?.reason}
+          </p>
+          {mostRecentApp && (
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <Badge
+                variant={
+                  mostRecentApp.status === "accepted"
+                    ? "default"
+                    : mostRecentApp.status === "rejected"
+                      ? "destructive"
+                      : "secondary"
+                }
+                className="text-sm capitalize"
+              >
+                {mostRecentApp.status === "reviewing" ? "Under Review" : mostRecentApp.status}
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                Submitted on{" "}
+                {new Date(mostRecentApp.submittedAt).toLocaleDateString()}
               </p>
-              {mostRecentApp && (
-                <div className="mt-8 flex flex-col items-center gap-4">
-                  <Badge
-                    variant={
-                      mostRecentApp.status === "accepted"
-                        ? "default"
-                        : mostRecentApp.status === "rejected"
-                          ? "destructive"
-                          : "secondary"
-                    }
-                    className="text-sm capitalize"
-                  >
-                    {mostRecentApp.status === "reviewing" ? "Under Review" : mostRecentApp.status}
-                  </Badge>
-                  <p className="text-sm text-muted-foreground">
-                    Submitted on{" "}
-                    {new Date(mostRecentApp.submittedAt).toLocaleDateString()}
-                  </p>
-                  {mostRecentApp.reviewedAt && (
-                    <p className="text-sm text-muted-foreground">
-                      Reviewed on{" "}
-                      {new Date(mostRecentApp.reviewedAt).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
+              {mostRecentApp.reviewedAt && (
+                <p className="text-sm text-muted-foreground">
+                  Reviewed on{" "}
+                  {new Date(mostRecentApp.reviewedAt).toLocaleDateString()}
+                </p>
               )}
-              
-              {/* Application History */}
-              {applicationHistory && applicationHistory.length > 1 && (
-                <div className="mt-12">
-                  <h2 className="text-lg font-medium">Application History</h2>
-                  <div className="mt-4 space-y-3">
-                    {applicationHistory.map((app, index) => (
-                      <div
-                        key={app._id}
-                        className="flex items-center justify-between rounded-lg border border-border p-4 text-left"
-                      >
-                        <div>
-                          <p className="font-medium">Application #{applicationHistory.length - index}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(app.submittedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            app.status === "accepted"
-                              ? "default"
-                              : app.status === "rejected"
-                                ? "destructive"
-                                : "secondary"
-                          }
-                          className="capitalize"
-                        >
-                          {app.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Link href="/">
-                <Button variant="outline" className="mt-8">
-                  Back to Home
-                </Button>
-              </Link>
             </div>
-          </section>
-        </main>
-        <Footer />
-      </div>
+          )}
+          
+          {/* Application History */}
+          {applicationHistory && applicationHistory.length > 1 && (
+            <div className="mt-12">
+              <h2 className="text-lg font-medium">Application History</h2>
+              <div className="mt-4 space-y-3">
+                {applicationHistory.map((app, index) => (
+                  <div
+                    key={app._id}
+                    className="flex items-center justify-between rounded-lg border border-border p-4 text-left"
+                  >
+                    <div>
+                      <p className="font-medium">Application #{applicationHistory.length - index}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(app.submittedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        app.status === "accepted"
+                          ? "default"
+                          : app.status === "rejected"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="capitalize"
+                    >
+                      {app.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Link href="/">
+            <Button variant="outline" className="mt-8">
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+      </section>
     );
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -1225,31 +1219,82 @@ export default function ApplyPage() {
       <main className="flex-1">
         <Unauthenticated>
           <section className="mx-auto max-w-2xl px-6 py-20">
-            <div className="text-center">
-              <h1 className="text-3xl font-semibold tracking-tight">
-                Join BobaLUG
-              </h1>
-              <p className="mt-4 text-muted-foreground">
-                Sign in with Discord to start your application. This helps us
-                verify your identity and connect with you during the review
-                process.
-              </p>
-              <Button
-                className="mt-8 gap-2"
-                onClick={() => void signIn("discord")}
-              >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-                </svg>
-                Sign In with Discord
-              </Button>
-            </div>
+            <Card className="border-2">
+              <CardContent className="pt-8 pb-8">
+                <div className="text-center">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                    Sign In to Apply
+                  </h1>
+                  <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+                    To apply for membership, please sign in with your Discord account. 
+                    This helps us verify your identity and communicate with you during the review process.
+                  </p>
+                  
+                  <div className="mt-8 space-y-4">
+                    <Button
+                      size="lg"
+                      className="gap-2"
+                      onClick={() => void signIn("discord")}
+                    >
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                      </svg>
+                      Sign In with Discord
+                    </Button>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      Don&apos;t have a Discord account?{" "}
+                      <a 
+                        href="https://discord.com/register" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Create one for free
+                      </a>
+                    </p>
+                  </div>
+                  
+                  <div className="relative my-6">
+                    <Separator />
+                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs font-medium text-muted-foreground">
+                      Why Discord?
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3 text-left">
+                    <div className="grid gap-3 text-sm text-muted-foreground">
+                      <div className="flex items-start gap-3">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>Our community communicates primarily through Discord</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>We&apos;ll notify you about your application status via Discord</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>It helps us verify that you&apos;re a real person</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </section>
         </Unauthenticated>
 
         <Authenticated>
+          {/* Show application status if user cannot apply */}
+          {canApplyResult && !canApplyResult.canApply && (
+            <ApplicationStatusSection />
+          )}
+
           {/* Already a member - show message */}
-          {membershipStatus?.isMember && (
+          {canApplyResult?.canApply && membershipStatus?.isMember && (
             <section className="mx-auto max-w-4xl px-6 py-20">
               <div className="mx-auto max-w-md text-center">
                 <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
@@ -1271,8 +1316,8 @@ export default function ApplyPage() {
             </section>
           )}
 
-          {/* Not a member - show application */}
-          {!membershipStatus?.isMember && (
+          {/* Not a member and can apply - show application */}
+          {canApplyResult?.canApply && !membershipStatus?.isMember && (
             <>
               {/* Page Header */}
               <section className="border-b border-border/40 bg-muted/20">

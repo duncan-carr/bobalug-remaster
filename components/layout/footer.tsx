@@ -16,7 +16,7 @@ export function Footer() {
             <span className="font-semibold">BobaLUG</span>
           </div>
 
-          <div className="flex gap-8 text-sm text-muted-foreground">
+          <nav className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground md:gap-8">
             <Link href="/about" className="hover:text-foreground">
               About
             </Link>
@@ -29,12 +29,16 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-foreground">
               Privacy
             </Link>
-          </div>
+          </nav>
 
           <p className="text-sm text-muted-foreground">
             © 2025 BobaLUG. All rights reserved.
           </p>
         </div>
+        
+        <p className="mt-8 border-t border-border/40 pt-6 text-center text-xs text-muted-foreground/60">
+          LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize, or endorse this site.
+        </p>
       </div>
     </footer>
   );
