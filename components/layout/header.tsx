@@ -27,14 +27,51 @@ import {
   User,
   Settings,
   Shield,
+  Instagram,
+  Youtube,
 } from "lucide-react";
+import { DiscordIcon } from "@/components/ui/discord-icon";
+import { cn } from "@/lib/utils";
 
 const baseNavLinks = [
   { href: "/about", label: "About" },
   { href: "/members", label: "Members" },
 ];
 
-const instagramLink = "https://www.instagram.com/bobalug/";
+const socialLinks = [
+  { href: "https://www.instagram.com/bobalug/", label: "Instagram", icon: "instagram" },
+  { href: "https://discord.gg/rAKjsXCfjW", label: "Discord", icon: "discord" },
+  { href: "https://www.flickr.com/groups/14908232@N21/", label: "Flickr", icon: "flickr" },
+  { href: "https://www.youtube.com/channel/UCnyRsIywqpCCw2rn_51Zsgw", label: "YouTube", icon: "youtube" },
+] as const;
+
+function FlickrIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={cn("h-4 w-4", className)}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M0 12c0 3.074 2.494 5.564 5.565 5.564 3.075 0 5.569-2.49 5.569-5.564S8.641 6.436 5.565 6.436C2.495 6.436 0 8.926 0 12zm12.866 0c0 3.074 2.493 5.564 5.567 5.564C21.502 17.564 24 15.074 24 12s-2.498-5.564-5.567-5.564c-3.074 0-5.567 2.49-5.567 5.564z" />
+    </svg>
+  );
+}
+
+function SocialIcon({ icon, className }: { icon: string; className?: string }) {
+  switch (icon) {
+    case "instagram":
+      return <Instagram className={cn("h-4 w-4", className)} />;
+    case "discord":
+      return <DiscordIcon className={className} />;
+    case "flickr":
+      return <FlickrIcon className={className} />;
+    case "youtube":
+      return <Youtube className={cn("h-4 w-4", className)} />;
+    default:
+      return null;
+  }
+}
 
 function useNavLinks() {
   const membershipStatus = useQuery(api.permissions.getAmIMember);
@@ -165,7 +202,24 @@ export function Header() {
         </div>
 
         {/* Auth & Mobile Menu */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Desktop Social Links */}
+          <div className="hidden items-center gap-0.5 md:flex">
+            {socialLinks.map((social) => (
+              <a
+                key={social.href}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label={social.label}
+              >
+                <SocialIcon icon={social.icon} className="h-3.5 w-3.5" />
+              </a>
+            ))}
+          </div>
+          
+          <div className="hidden h-6 w-px bg-border/40 md:block" />
           {/* Auth States */}
           <AuthLoading>
             <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
@@ -261,6 +315,22 @@ export function Header() {
                     {link.label}
                   </Link>
                 ))}
+                
+                {/* Mobile Social Links */}
+                <div className="mt-4 flex items-center justify-center gap-2 border-t border-border/40 pt-4">
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.href}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label={social.label}
+                    >
+                      <SocialIcon icon={social.icon} />
+                    </a>
+                  ))}
+                </div>
               </div>
               <div className="mt-auto border-t border-border p-6">
                 <Unauthenticated>
