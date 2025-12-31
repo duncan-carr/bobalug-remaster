@@ -12,6 +12,9 @@ const schema = defineSchema({
     username: v.optional(v.string()),
     bio: v.optional(v.string()),
     website: v.optional(v.string()),
+    instagram: v.optional(v.string()), // Instagram username
+    location: v.optional(v.string()), // User's location
+    instagramMigratedFromWebsite: v.optional(v.boolean()), // Track if Instagram was auto-migrated
     avatarUrl: v.optional(v.string()),
     // Leadership role (e.g., "President", "Vice President", etc.) - legacy field
     role: v.optional(v.string()),

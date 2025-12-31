@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,7 +25,25 @@ import {
   Check,
   Loader2,
   Save,
+  MapPin,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Instagram icon component
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  );
+}
+
+// Helper function to check if a website URL is an Instagram URL (client-side)
+function isInstagramUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\//i.test(url);
+}
 
 export default function SettingsPage() {
   const { signOut } = useAuthActions();
@@ -33,11 +51,14 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const hasCalledMigration = useRef(false);
   const [formData, setFormData] = useState({
     displayName: "",
     username: "",
     bio: "",
     website: "",
+    instagram: "",
+    location: "",
   });
 
   // Get user data
@@ -45,9 +66,10 @@ export default function SettingsPage() {
   const getOrCreateProfile = useMutation(api.users.getOrCreateProfile);
   const updateProfile = useMutation(api.users.updateProfile);
 
-  // Ensure profile exists on mount
+  // Ensure profile exists on mount and run any migrations (only once)
   useEffect(() => {
-    if (currentUser && !currentUser.profile) {
+    if (currentUser && !hasCalledMigration.current) {
+      hasCalledMigration.current = true;
       getOrCreateProfile();
     }
   }, [currentUser, getOrCreateProfile]);
@@ -60,6 +82,8 @@ export default function SettingsPage() {
         username: currentUser.profile.username ?? "",
         bio: currentUser.profile.bio ?? "",
         website: currentUser.profile.website ?? "",
+        instagram: currentUser.profile.instagram ?? "",
+        location: currentUser.profile.location ?? "",
       });
     } else if (currentUser) {
       setFormData({
@@ -67,6 +91,8 @@ export default function SettingsPage() {
         username: "",
         bio: "",
         website: "",
+        instagram: "",
+        location: "",
       });
     }
   }, [currentUser]);
@@ -226,6 +252,47 @@ export default function SettingsPage() {
                               />
                             </div>
 
+                            <div className="grid gap-6 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="instagram">Instagram</Label>
+                                <div className="flex gap-2">
+                                  <div className="flex items-center rounded-md border border-input bg-muted/50 px-3 text-muted-foreground">
+                                    <InstagramIcon className="h-4 w-4" />
+                                  </div>
+                                  <Input
+                                    id="instagram"
+                                    value={formData.instagram}
+                                    onChange={(e) => {
+                                      // Strip @ symbol and any instagram URL prefix
+                                      let value = e.target.value;
+                                      value = value.replace(/^@/, '');
+                                      value = value.replace(/^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\//i, '');
+                                      setFormData({ ...formData, instagram: value });
+                                    }}
+                                    placeholder="yourusername"
+                                    className="bg-muted/30"
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="location">Location</Label>
+                                <div className="flex gap-2">
+                                  <div className="flex items-center rounded-md border border-input bg-muted/50 px-3 text-muted-foreground">
+                                    <MapPin className="h-4 w-4" />
+                                  </div>
+                                  <Input
+                                    id="location"
+                                    value={formData.location}
+                                    onChange={(e) =>
+                                      setFormData({ ...formData, location: e.target.value })
+                                    }
+                                    placeholder="City, Country"
+                                    className="bg-muted/30"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
                             <div className="space-y-2">
                               <Label htmlFor="website">Website</Label>
                               <Input
@@ -238,6 +305,14 @@ export default function SettingsPage() {
                                 placeholder="https://yourwebsite.com"
                                 className="bg-muted/30"
                               />
+                              {isInstagramUrl(formData.website) && (
+                                <Alert className="mt-2 border-amber-500/50 bg-amber-500/10">
+                                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                  <AlertDescription className="text-amber-600 dark:text-amber-400">
+                                    It looks like you have an Instagram link as your website. Please use the Instagram Username field above instead, and clear this field.
+                                  </AlertDescription>
+                                </Alert>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-3">

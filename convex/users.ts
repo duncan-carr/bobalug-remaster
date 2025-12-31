@@ -2,6 +2,31 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
+// Helper function to detect if a URL is an Instagram URL and extract the username
+function extractInstagramUsername(url: string | undefined): string | null {
+  if (!url) return null;
+  
+  // Match instagram.com/username or instagr.am/username patterns
+  const instagramPattern = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9._]+)\/?(?:\?.*)?$/i;
+  const match = url.match(instagramPattern);
+  
+  if (match && match[1]) {
+    // Filter out known non-username paths
+    const nonUserPaths = ['p', 'reel', 'reels', 'stories', 'explore', 'accounts', 'direct', 'tv'];
+    if (!nonUserPaths.includes(match[1].toLowerCase())) {
+      return match[1];
+    }
+  }
+  
+  return null;
+}
+
+// Helper function to check if a website URL is an Instagram URL
+export function isInstagramUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\//i.test(url);
+}
+
 // Get the current user's profile
 export const getCurrentUser = query({
   args: {},
@@ -61,6 +86,19 @@ export const getOrCreateProfile = mutation({
       profile = await ctx.db.get(profileId);
     }
 
+    // Migrate Instagram from website if applicable
+    if (profile && profile.website && !profile.instagram) {
+      const instagramUsername = extractInstagramUsername(profile.website);
+      if (instagramUsername) {
+        await ctx.db.patch(profile._id, {
+          instagram: instagramUsername,
+          website: undefined, // Clear the website field
+          instagramMigratedFromWebsite: true, // Flag for showing popup
+        });
+        profile = await ctx.db.get(profile._id);
+      }
+    }
+
     return profile;
   },
 });
@@ -72,6 +110,8 @@ export const updateProfile = mutation({
     username: v.optional(v.string()),
     bio: v.optional(v.string()),
     website: v.optional(v.string()),
+    instagram: v.optional(v.string()),
+    location: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -98,6 +138,30 @@ export const updateProfile = mutation({
       username: args.username ?? profile.username,
       bio: args.bio ?? profile.bio,
       website: args.website ?? profile.website,
+      instagram: args.instagram ?? profile.instagram,
+      location: args.location ?? profile.location,
+    });
+
+    return await ctx.db.get(profile._id);
+  },
+});
+
+// Dismiss the Instagram migration notice
+export const dismissInstagramMigrationNotice = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!profile) throw new Error("Profile not found");
+
+    await ctx.db.patch(profile._id, {
+      instagramMigratedFromWebsite: false,
     });
 
     return await ctx.db.get(profile._id);
@@ -209,6 +273,8 @@ export const getPublicProfile = query({
       username: profile?.username ?? null,
       bio: profile?.bio ?? null,
       website: profile?.website ?? null,
+      instagram: profile?.instagram ?? null,
+      location: profile?.location ?? null,
       role: profile?.role ?? "Member",
       avatar: initials,
       image: profile?.avatarUrl ?? user.image ?? null,
