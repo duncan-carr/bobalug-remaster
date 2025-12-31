@@ -42,31 +42,21 @@ const values = [
 ];
 
 const milestones = [
-  { year: "2018", event: "BobaLUG founded with 12 charter members" },
-  { year: "2019", event: "First public display at Bay Area Brick Show" },
-  { year: "2020", event: "Launched virtual build nights during the pandemic" },
-  { year: "2021", event: "Reached 50 active members" },
-  { year: "2022", event: "Won Best Club Display at BrickCon" },
-  { year: "2023", event: "Hosted first annual BobaLUG Build-a-Thon" },
-  { year: "2024", event: "100+ members and growing strong" },
+  { year: "2019", event: "BobaLUG founded with 12 charter members" },
+  { year: "2020", event: "Launched online building challenges during the pandemic" },
+  { year: "2023", event: "Attended Brickworld Chicago for the first time with 5 members" },
+  { year: "2024", event: "Displayed our largest collab: Sylvoria at Brickworld Chicago" },
+  { year: "2025", event: "60+ members and growing stronger every year" },
 ];
 
 const faqs = [
   {
     question: "How do I join BobaLUG?",
-    answer: "Simply sign in with Discord and fill out a short membership form. Membership is free and open to LEGO fans of all skill levels.",
-  },
-  {
-    question: "Do I need to attend events in person?",
-    answer: "Not at all! We have many virtual members who participate through our Discord server and online events. In-person attendance is optional.",
+    answer: "Fill out the application form on the Apply page. We review applications every two weeks. If denied, you will be required to wait 90 days before reapplying.",
   },
   {
     question: "What age groups are welcome?",
-    answer: "We welcome builders of all ages. Members under 18 should have parental consent, and we have family-friendly events specifically for younger builders.",
-  },
-  {
-    question: "Do I need to be an expert builder?",
-    answer: "Absolutely not! We have members ranging from beginners to master builders. We're here to learn from each other and have fun.",
+    answer: "We welcome builders of all ages to participate in our Discord as long as they are in compliance with Discord's Terms of Service (13+ years of age). To become a member, you must be at least 16 years old.",
   },
 ];
 

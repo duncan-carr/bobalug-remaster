@@ -40,7 +40,7 @@ const sponsors = [
     description: "Custom machine printed figures with UV digital printing and child-safe inks.",
     discountCode: "Bobalug",
     discountPercent: "5%",
-    url: "https://figfablabs.com",
+    url: "https://fig-fablabs.com",
   },
   {
     name: "VenomCBW",

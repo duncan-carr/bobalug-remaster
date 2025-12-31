@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
@@ -29,6 +29,7 @@ import {
   ExternalLink,
   ArrowLeft,
   Calendar,
+  ShieldX,
 } from "lucide-react";
 
 type AdminSection = "dashboard" | "applications" | "messages" | "users";
@@ -37,9 +38,37 @@ export default function AdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const [rolesSynced, setRolesSynced] = useState(false);
 
-  // Get section from URL, default to "dashboard"
-  const activeSection = (searchParams.get("section") as AdminSection) || "dashboard";
+  // Sync Discord roles when admin page loads
+  const syncRoles = useAction(api.discord.syncMyDiscordRoles);
+  
+  useEffect(() => {
+    if (!rolesSynced) {
+      syncRoles()
+        .then(() => setRolesSynced(true))
+        .catch((err) => {
+          console.error("Failed to sync Discord roles:", err);
+          setRolesSynced(true); // Continue anyway
+        });
+    }
+  }, [syncRoles, rolesSynced]);
+
+  // Get permissions (will update after role sync)
+  const permissions = useQuery(api.permissions.getMyAdminPermissions);
+
+  // Get section from URL, default based on permissions
+  const urlSection = searchParams.get("section") as AdminSection | null;
+  
+  // Determine valid default section based on permissions
+  const getDefaultSection = (): AdminSection => {
+    if (!permissions) return "applications"; // Loading state
+    if (permissions.canViewDashboard) return "dashboard";
+    if (permissions.canViewApplications) return "applications";
+    return "applications";
+  };
+  
+  const activeSection = urlSection || getDefaultSection();
   
   // Get selected application ID from URL (for direct links to applications)
   const selectedAppId = searchParams.get("app") as Id<"applications"> | null;
@@ -62,12 +91,53 @@ export default function AdminPage() {
 
   const setActiveSection = (section: AdminSection) => {
     // Clear app selection when changing sections
-    updateParams({ section: section === "dashboard" ? null : section, app: null });
+    updateParams({ section: section === getDefaultSection() ? null : section, app: null });
   };
 
   const setSelectedApp = (appId: Id<"applications"> | null) => {
     updateParams({ app: appId });
   };
+
+  // If still loading permissions or syncing roles
+  if (permissions === undefined || !rolesSynced) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-muted-foreground">
+            {!rolesSynced ? "Syncing permissions..." : "Loading..."}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If user doesn't have admin access
+  if (!permissions.canAccessAdmin) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Header />
+        <main className="flex-1">
+          <section className="mx-auto max-w-6xl px-6 py-20">
+            <div className="mx-auto max-w-md text-center">
+              <ShieldX className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <h1 className="mt-4 text-2xl font-semibold tracking-tight">
+                Access Denied
+              </h1>
+              <p className="mt-2 text-muted-foreground">
+                You don&apos;t have permission to access the admin panel.
+              </p>
+              <Link href="/">
+                <Button className="mt-6">Go to Home</Button>
+              </Link>
+            </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -114,43 +184,51 @@ export default function AdminPage() {
             <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
               {/* Sidebar Navigation */}
               <nav className="space-y-1">
-                <NavButton
-                  icon={LayoutDashboard}
-                  label="Dashboard"
-                  active={activeSection === "dashboard"}
-                  onClick={() => setActiveSection("dashboard")}
-                />
-                <NavButton
-                  icon={FileText}
-                  label="Applications"
-                  active={activeSection === "applications"}
-                  onClick={() => setActiveSection("applications")}
-                />
-                <NavButton
-                  icon={MessageSquare}
-                  label="Messages"
-                  active={activeSection === "messages"}
-                  onClick={() => setActiveSection("messages")}
-                />
-                <NavButton
-                  icon={Users}
-                  label="Users"
-                  active={activeSection === "users"}
-                  onClick={() => setActiveSection("users")}
-                />
+                {permissions.canViewDashboard && (
+                  <NavButton
+                    icon={LayoutDashboard}
+                    label="Dashboard"
+                    active={activeSection === "dashboard"}
+                    onClick={() => setActiveSection("dashboard")}
+                  />
+                )}
+                {permissions.canViewApplications && (
+                  <NavButton
+                    icon={FileText}
+                    label="Applications"
+                    active={activeSection === "applications"}
+                    onClick={() => setActiveSection("applications")}
+                  />
+                )}
+                {permissions.canViewMessages && (
+                  <NavButton
+                    icon={MessageSquare}
+                    label="Messages"
+                    active={activeSection === "messages"}
+                    onClick={() => setActiveSection("messages")}
+                  />
+                )}
+                {permissions.canViewUsers && (
+                  <NavButton
+                    icon={Users}
+                    label="Users"
+                    active={activeSection === "users"}
+                    onClick={() => setActiveSection("users")}
+                  />
+                )}
               </nav>
 
               {/* Main Content */}
               <div className="min-w-0">
-                {activeSection === "dashboard" && <DashboardSection />}
-                {activeSection === "applications" && (
+                {activeSection === "dashboard" && permissions.canViewDashboard && <DashboardSection />}
+                {activeSection === "applications" && permissions.canViewApplications && (
                   <ApplicationsSection 
                     selectedAppId={selectedAppId}
                     onSelectApp={setSelectedApp}
                   />
                 )}
-                {activeSection === "messages" && <MessagesSection />}
-                {activeSection === "users" && <UsersSection />}
+                {activeSection === "messages" && permissions.canViewMessages && <MessagesSection />}
+                {activeSection === "users" && permissions.canViewUsers && <UsersSection />}
               </div>
             </div>
           </div>

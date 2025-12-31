@@ -16,6 +16,7 @@ import type * as discord from "../discord.js";
 import type * as files from "../files.js";
 import type * as home from "../home.js";
 import type * as http from "../http.js";
+import type * as permissions from "../permissions.js";
 import type * as users from "../users.js";
 
 import type {
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   home: typeof home;
   http: typeof http;
+  permissions: typeof permissions;
   users: typeof users;
 }>;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,8 +19,11 @@ import {
   Loader2,
   RefreshCw,
   Shield,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DiscordIcon } from "@/components/ui/discord-icon";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function getInitials(name: string | undefined | null): string {
   if (!name) return "U";
@@ -40,6 +43,8 @@ function formatDate(timestamp: number): string {
 
 export default function ProfilePage() {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [notInGuild, setNotInGuild] = useState(false);
+  const hasTriedInitialSync = useRef(false);
 
   // Get user data
   const currentUser = useQuery(api.users.getCurrentUser);
@@ -54,17 +59,43 @@ export default function ProfilePage() {
     }
   }, [currentUser, getOrCreateProfile]);
 
-  const handleSyncRoles = async () => {
+  // Auto-sync roles on first sign-in
+  useEffect(() => {
+    if (
+      userStats?.needsRoleSync &&
+      !hasTriedInitialSync.current &&
+      !isSyncing
+    ) {
+      hasTriedInitialSync.current = true;
+      handleSyncRoles(true);
+    }
+  }, [userStats?.needsRoleSync, isSyncing]);
+
+  const handleSyncRoles = async (isInitialSync = false) => {
     setIsSyncing(true);
+    setNotInGuild(false);
     try {
       const result = await syncRoles();
       if (result.success) {
-        toast.success(result.message);
+        if (result.inGuild === false) {
+          setNotInGuild(true);
+          if (!isInitialSync) {
+            toast.error("You're not in the BobaLUG Discord server");
+          }
+        } else {
+          if (!isInitialSync) {
+            toast.success(result.message);
+          }
+        }
       } else {
-        toast.error(result.message);
+        if (!isInitialSync) {
+          toast.error(result.message);
+        }
       }
     } catch (error) {
-      toast.error("Failed to sync Discord roles");
+      if (!isInitialSync) {
+        toast.error("Failed to sync Discord roles");
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -168,7 +199,7 @@ export default function ProfilePage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={handleSyncRoles}
+                          onClick={() => handleSyncRoles(false)}
                           disabled={isSyncing}
                           className="h-8 w-8 p-0"
                         >
@@ -179,7 +210,44 @@ export default function ProfilePage() {
                         </Button>
                       </CardHeader>
                       <CardContent>
-                        {profile?.discordRoles && profile.discordRoles.length > 0 ? (
+                        {isSyncing && !profile?.discordRoles?.length ? (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Syncing your Discord roles...</span>
+                          </div>
+                        ) : notInGuild ? (
+                          <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Not in Discord Server</AlertTitle>
+                            <AlertDescription className="mt-2 space-y-3">
+                              <p className="text-sm">
+                                Join the BobaLUG Discord server to sync your roles and become a member.
+                              </p>
+                              <div className="flex flex-col gap-2">
+                                <a
+                                  href="https://discord.gg/rAKjsXCfjW"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button size="sm" className="w-full gap-2">
+                                    <DiscordIcon className="h-4 w-4" />
+                                    Join Discord
+                                  </Button>
+                                </a>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSyncRoles(false)}
+                                  disabled={isSyncing}
+                                  className="w-full gap-2"
+                                >
+                                  <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+                                  Try Again
+                                </Button>
+                              </div>
+                            </AlertDescription>
+                          </Alert>
+                        ) : profile?.discordRoles && profile.discordRoles.length > 0 ? (
                           <DiscordRolesList
                             roles={profile.discordRoles}
                             variant="compact"
@@ -190,7 +258,7 @@ export default function ProfilePage() {
                             <Button
                               variant="link"
                               size="sm"
-                              onClick={handleSyncRoles}
+                              onClick={() => handleSyncRoles(false)}
                               disabled={isSyncing}
                               className="mt-1 h-auto p-0"
                             >
@@ -198,7 +266,7 @@ export default function ProfilePage() {
                             </Button>
                           </div>
                         )}
-                        {profile?.discordRolesSyncedAt && (
+                        {profile?.discordRolesSyncedAt && !notInGuild && (
                           <p className="mt-3 text-xs text-muted-foreground">
                             Last synced:{" "}
                             {new Date(profile.discordRolesSyncedAt).toLocaleDateString()}
@@ -218,10 +286,10 @@ export default function ProfilePage() {
                             <Calendar className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">Member since</p>
+                            <p className="text-sm text-muted-foreground">Joined</p>
                             <p className="font-medium">
-                              {userStats?.memberSince
-                                ? formatDate(userStats.memberSince)
+                              {userStats?.joinedAt
+                                ? formatDate(userStats.joinedAt)
                                 : "—"}
                             </p>
                           </div>

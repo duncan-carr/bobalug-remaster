@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { isWebAdmin, isApplicationJudge } from "./permissions";
 
 // ==================== APPLICATIONS ====================
 
@@ -13,6 +14,11 @@ export const getApplications = query({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+
+    // Permission check: must be web admin or application judge
+    const webAdmin = await isWebAdmin(ctx, userId);
+    const judge = await isApplicationJudge(ctx, userId);
+    if (!webAdmin && !judge) throw new Error("Not authorized");
 
     const page = args.page ?? 1;
     const pageSize = args.pageSize ?? 10;
@@ -66,6 +72,11 @@ export const getApplication = query({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+
+    // Permission check: must be web admin or application judge
+    const webAdmin = await isWebAdmin(ctx, userId);
+    const judge = await isApplicationJudge(ctx, userId);
+    if (!webAdmin && !judge) throw new Error("Not authorized");
     
     const application = await ctx.db.get(args.id);
     if (!application) return null;
@@ -88,6 +99,12 @@ export const updateApplicationStatus = mutation({
   handler: async (ctx, args) => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) throw new Error("Not authenticated");
+
+    // Permission check: must be web admin or application judge
+    const webAdmin = await isWebAdmin(ctx, authUserId);
+    const judge = await isApplicationJudge(ctx, authUserId);
+    if (!webAdmin && !judge) throw new Error("Not authorized");
+
     await ctx.db.patch(args.id, { status: args.status });
     return { success: true };
   },
@@ -104,6 +121,10 @@ export const getContactMessages = query({
   handler: async (ctx, args) => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) throw new Error("Not authenticated");
+
+    // Permission check: web admin only
+    const webAdmin = await isWebAdmin(ctx, authUserId);
+    if (!webAdmin) throw new Error("Not authorized");
 
     const page = args.page ?? 1;
     const pageSize = args.pageSize ?? 10;
@@ -147,6 +168,11 @@ export const updateContactStatus = mutation({
   handler: async (ctx, args) => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) throw new Error("Not authenticated");
+
+    // Permission check: web admin only
+    const webAdmin = await isWebAdmin(ctx, authUserId);
+    if (!webAdmin) throw new Error("Not authorized");
+
     await ctx.db.patch(args.id, { status: args.status });
     return { success: true };
   },
@@ -309,6 +335,10 @@ export const getDashboardStats = query({
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) throw new Error("Not authenticated");
 
+    // Permission check: web admin only
+    const webAdmin = await isWebAdmin(ctx, authUserId);
+    if (!webAdmin) throw new Error("Not authorized");
+
     const [
       pendingApplications,
       totalApplications,
@@ -359,6 +389,10 @@ export const getUsers = query({
   handler: async (ctx, args) => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) throw new Error("Not authenticated");
+
+    // Permission check: web admin only
+    const webAdmin = await isWebAdmin(ctx, authUserId);
+    if (!webAdmin) throw new Error("Not authorized");
 
     const page = args.page ?? 1;
     const pageSize = args.pageSize ?? 15;

@@ -28,6 +28,8 @@ const schema = defineSchema({
     ),
     // When Discord roles were last synced
     discordRolesSyncedAt: v.optional(v.number()),
+    // When user joined the Discord guild
+    discordGuildJoinedAt: v.optional(v.number()),
     // Badges earned by the user
     badges: v.optional(v.array(v.string())),
     // Privacy settings

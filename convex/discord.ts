@@ -57,6 +57,7 @@ export const updateUserDiscordRoles = internalMutation({
         position: v.number(),
       })
     ),
+    guildJoinedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const profile = await ctx.db
@@ -70,6 +71,7 @@ export const updateUserDiscordRoles = internalMutation({
         userId: args.userId,
         discordRoles: args.roles,
         discordRolesSyncedAt: Date.now(),
+        discordGuildJoinedAt: args.guildJoinedAt,
         profileVisible: true,
         showOnlineStatus: false,
         notifyEvents: true,
@@ -79,10 +81,15 @@ export const updateUserDiscordRoles = internalMutation({
         badges: [],
       });
     } else {
-      await ctx.db.patch(profile._id, {
+      const updates: Record<string, unknown> = {
         discordRoles: args.roles,
         discordRolesSyncedAt: Date.now(),
-      });
+      };
+      // Only update guild join date if provided
+      if (args.guildJoinedAt !== undefined) {
+        updates.discordGuildJoinedAt = args.guildJoinedAt;
+      }
+      await ctx.db.patch(profile._id, updates);
     }
   },
 });
@@ -90,7 +97,7 @@ export const updateUserDiscordRoles = internalMutation({
 // Action to sync Discord roles for the current user
 export const syncMyDiscordRoles = action({
   args: {},
-  handler: async (ctx): Promise<{ success: boolean; message: string; roles?: Array<{ id: string; name: string; color: number; position: number }> }> => {
+  handler: async (ctx): Promise<{ success: boolean; message: string; roles?: Array<{ id: string; name: string; color: number; position: number }>; inGuild?: boolean }> => {
     const userId = await auth.getUserId(ctx);
     if (!userId) {
       return { success: false, message: "Not authenticated" };
@@ -151,7 +158,7 @@ export const syncMyDiscordRoles = action({
             userId,
             roles: [],
           });
-          return { success: true, message: "User is not in the Discord server", roles: [] };
+          return { success: true, message: "User is not in the Discord server", roles: [], inGuild: false };
         }
         const errorText = await memberResponse.text();
         console.error("Failed to fetch guild member:", errorText);
@@ -159,6 +166,11 @@ export const syncMyDiscordRoles = action({
       }
 
       const memberData: DiscordGuildMember = await memberResponse.json();
+
+      // Parse guild join date
+      const guildJoinedAt = memberData.joined_at
+        ? new Date(memberData.joined_at).getTime()
+        : undefined;
 
       // Map member's role IDs to full role objects
       const userRoles = guildRoles
@@ -174,16 +186,18 @@ export const syncMyDiscordRoles = action({
           position: role.position,
         }));
 
-      // Update user's profile with roles
+      // Update user's profile with roles and guild join date
       await ctx.runMutation(internal.discord.updateUserDiscordRoles, {
         userId,
         roles: userRoles,
+        guildJoinedAt,
       });
 
       return {
         success: true,
         message: `Synced ${userRoles.length} roles`,
         roles: userRoles,
+        inGuild: true,
       };
     } catch (error) {
       console.error("Error syncing Discord roles:", error);

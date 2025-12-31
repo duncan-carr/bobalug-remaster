@@ -167,8 +167,10 @@ export const getUserStats = query({
       .first();
 
     return {
-      memberSince: user._creationTime,
+      // Prefer Discord guild join date, fall back to account creation time
+      joinedAt: profile?.discordGuildJoinedAt ?? user._creationTime,
       badgesCount: profile?.badges?.length ?? 0,
+      needsRoleSync: !profile?.discordRolesSyncedAt,
     };
   },
 });
@@ -210,13 +212,18 @@ export const getPublicProfile = query({
       role: profile?.role ?? "Member",
       avatar: initials,
       image: profile?.avatarUrl ?? user.image ?? null,
-      memberSince: user._creationTime,
+      // Prefer Discord guild join date, fall back to account creation time
+      joinedAt: profile?.discordGuildJoinedAt ?? user._creationTime,
       isOwnProfile: currentUserId === args.userId,
       discordRoles: profile?.discordRoles ?? [],
       discordRolesSyncedAt: profile?.discordRolesSyncedAt ?? null,
     };
   },
 });
+
+// Environment variables for member role IDs
+const DISCORD_MEMBER_ROLE_ID = process.env.DISCORD_MEMBER_ROLE_ID;
+const DISCORD_CHARTER_MEMBER_ROLE_ID = process.env.DISCORD_CHARTER_MEMBER_ROLE_ID;
 
 // Get all public members for the members page
 export const getAllMembers = query({
@@ -232,8 +239,18 @@ export const getAllMembers = query({
     // Get all profiles that are visible
     const profiles = await ctx.db.query("profiles").collect();
     
-    // Filter to only visible profiles
-    const visibleProfiles = profiles.filter((p) => p.profileVisible !== false);
+    // Filter to only visible profiles that have member or charter member roles
+    const visibleProfiles = profiles.filter((p) => {
+      // Must be visible
+      if (p.profileVisible === false) return false;
+      
+      // Check if user has member or charter member role
+      const roleIds = p.discordRoles?.map((r) => r.id) ?? [];
+      const hasMemberRole = DISCORD_MEMBER_ROLE_ID && roleIds.includes(DISCORD_MEMBER_ROLE_ID);
+      const hasCharterMemberRole = DISCORD_CHARTER_MEMBER_ROLE_ID && roleIds.includes(DISCORD_CHARTER_MEMBER_ROLE_ID);
+      
+      return hasMemberRole || hasCharterMemberRole;
+    });
 
     // Enrich with user information
     const members = await Promise.all(
@@ -252,13 +269,17 @@ export const getAllMembers = query({
         // Get the highest-colored Discord role for display
         const primaryRole = profile.discordRoles?.find((r) => r.color !== 0) ?? null;
 
+        // Prefer Discord guild join date, fall back to account creation time
+        const joinedAt = profile.discordGuildJoinedAt ?? user._creationTime;
+
         return {
           id: profile.userId, // Return the user ID for linking to profiles
           name,
           role: profile.role ?? "Member",
           avatar: initials,
           image: profile.avatarUrl ?? user.image ?? null,
-          joinDate: new Date(user._creationTime).getFullYear().toString(),
+          joinedAt,
+          joinDate: new Date(joinedAt).getFullYear().toString(),
           username: profile.username,
           discordRoles: profile.discordRoles ?? [],
           primaryRoleColor: primaryRole?.color ?? null,

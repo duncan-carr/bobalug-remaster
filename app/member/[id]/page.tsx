@@ -211,8 +211,8 @@ export default function MemberProfilePage({
                           <Calendar className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Member since</p>
-                          <p className="font-medium">{formatDate(profile.memberSince)}</p>
+                          <p className="text-sm text-muted-foreground">Joined</p>
+                          <p className="font-medium">{formatDate(profile.joinedAt)}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -324,8 +324,8 @@ export default function MemberProfilePage({
                           <Calendar className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Member since</p>
-                          <p className="font-medium">{formatDate(profile.memberSince)}</p>
+                          <p className="text-sm text-muted-foreground">Joined</p>
+                          <p className="font-medium">{formatDate(profile.joinedAt)}</p>
                         </div>
                       </div>
                     </CardContent>

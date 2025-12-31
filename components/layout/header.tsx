@@ -29,13 +29,23 @@ import {
   Shield,
 } from "lucide-react";
 
-const navLinks = [
+const baseNavLinks = [
   { href: "/about", label: "About" },
   { href: "/members", label: "Members" },
-  { href: "/apply", label: "Apply" },
 ];
 
 const instagramLink = "https://www.instagram.com/bobalug/";
+
+function useNavLinks() {
+  const membershipStatus = useQuery(api.permissions.getAmIMember);
+  
+  // Show Apply link only if user is not a member (or not authenticated)
+  const showApply = !membershipStatus?.isMember;
+  
+  return showApply 
+    ? [...baseNavLinks, { href: "/apply", label: "Apply" }]
+    : baseNavLinks;
+}
 
 function getInitials(name: string | undefined | null): string {
   if (!name) return "U";
@@ -84,10 +94,43 @@ function MobileHeaderUser() {
   );
 }
 
+function AdminPanelLink() {
+  const permissions = useQuery(api.permissions.getMyAdminPermissions);
+  
+  if (!permissions?.canAccessAdmin) return null;
+  
+  return (
+    <DropdownMenuItem>
+      <Link href="/admin" className="flex w-full items-center gap-2">
+        <Shield className="h-4 w-4" />
+        Admin Panel
+      </Link>
+    </DropdownMenuItem>
+  );
+}
+
+function MobileAdminPanelLink({ onNavigate }: { onNavigate: () => void }) {
+  const permissions = useQuery(api.permissions.getMyAdminPermissions);
+  
+  if (!permissions?.canAccessAdmin) return null;
+  
+  return (
+    <Link
+      href="/admin"
+      onClick={onNavigate}
+      className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm transition-colors hover:bg-muted"
+    >
+      <Shield className="h-4 w-4" />
+      Admin Panel
+    </Link>
+  );
+}
+
 export function Header() {
   const { signIn, signOut } = useAuthActions();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const navLinks = useNavLinks();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
@@ -167,12 +210,7 @@ export function Header() {
                     Settings
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/admin" className="flex w-full items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Admin Panel
-                  </Link>
-                </DropdownMenuItem>
+                <AdminPanelLink />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => void signOut()}
@@ -239,14 +277,7 @@ export function Header() {
                 <Authenticated>
                   <MobileHeaderUser />
                   <div className="mt-4 flex flex-col gap-2">
-                    <Link
-                      href="/admin"
-                      onClick={() => setSheetOpen(false)}
-                      className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm transition-colors hover:bg-muted"
-                    >
-                      <Shield className="h-4 w-4" />
-                      Admin Panel
-                    </Link>
+                    <MobileAdminPanelLink onNavigate={() => setSheetOpen(false)} />
                     <Button
                       variant="outline"
                       className="w-full gap-2"

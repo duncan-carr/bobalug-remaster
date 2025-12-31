@@ -888,6 +888,7 @@ export default function ApplyPage() {
   const canApplyResult = useQuery(api.applications.canUserApply);
   const applicationHistory = useQuery(api.applications.getMyApplicationHistory);
   const pendingApplication = useQuery(api.applications.getPendingApplication);
+  const membershipStatus = useQuery(api.permissions.getAmIMember);
   const submitApplication = useMutation(api.applications.submitApplication);
   const savePendingApplication = useMutation(
     api.applications.savePendingApplication
@@ -1247,27 +1248,53 @@ export default function ApplyPage() {
         </Unauthenticated>
 
         <Authenticated>
-          {/* Page Header */}
-          <section className="border-b border-border/40 bg-muted/20">
-            <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
-              <Link
-                href="/"
-                className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" />
-                Back to Home
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight md:text-2xl lg:text-3xl">
-                  Apply to Join BobaLUG
+          {/* Already a member - show message */}
+          {membershipStatus?.isMember && (
+            <section className="mx-auto max-w-4xl px-6 py-20">
+              <div className="mx-auto max-w-md text-center">
+                <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
+                <h1 className="mt-4 text-2xl font-semibold tracking-tight">
+                  You&apos;re Already a Member!
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground md:mt-2 md:text-base">
-                  {currentUser?.name && `Hi ${currentUser.name}! `}Complete
-                  the application below.
+                <p className="mt-2 text-muted-foreground">
+                  You already have access to the BobaLUG community. No need to apply again!
                 </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                  <Link href="/members">
+                    <Button>View Members</Button>
+                  </Link>
+                  <Link href="/profile">
+                    <Button variant="outline">Go to Profile</Button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
+
+          {/* Not a member - show application */}
+          {!membershipStatus?.isMember && (
+            <>
+              {/* Page Header */}
+              <section className="border-b border-border/40 bg-muted/20">
+                <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
+                  <Link
+                    href="/"
+                    className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to Home
+                  </Link>
+                  <div>
+                    <h1 className="text-xl font-semibold tracking-tight md:text-2xl lg:text-3xl">
+                      Apply to Join BobaLUG
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground md:mt-2 md:text-base">
+                      {currentUser?.name && `Hi ${currentUser.name}! `}Complete
+                      the application below.
+                    </p>
+                  </div>
+                </div>
+              </section>
 
           {/* Progress Steps */}
           <section className="border-b border-border/40 bg-background">
@@ -2000,6 +2027,8 @@ export default function ApplyPage() {
               )}
             </div>
           </section>
+            </>
+          )}
         </Authenticated>
       </main>
 

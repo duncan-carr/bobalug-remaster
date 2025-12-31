@@ -1,12 +1,22 @@
 import { query } from "./_generated/server";
 
+// Environment variables for member role IDs
+const DISCORD_MEMBER_ROLE_ID = process.env.DISCORD_MEMBER_ROLE_ID;
+const DISCORD_CHARTER_MEMBER_ROLE_ID = process.env.DISCORD_CHARTER_MEMBER_ROLE_ID;
+
 // Get statistics for the homepage
 export const getHomeStats = query({
   args: {},
   handler: async (ctx) => {
-    // Count active members (users with profiles)
+    // Count active members (users with member or charter member Discord roles)
     const profiles = await ctx.db.query("profiles").collect();
-    const memberCount = profiles.length;
+    
+    const memberCount = profiles.filter((profile) => {
+      const roleIds = profile.discordRoles?.map((r) => r.id) ?? [];
+      const hasMemberRole = DISCORD_MEMBER_ROLE_ID && roleIds.includes(DISCORD_MEMBER_ROLE_ID);
+      const hasCharterMemberRole = DISCORD_CHARTER_MEMBER_ROLE_ID && roleIds.includes(DISCORD_CHARTER_MEMBER_ROLE_ID);
+      return hasMemberRole || hasCharterMemberRole;
+    }).length;
 
     return {
       memberCount,
